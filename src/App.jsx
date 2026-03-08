@@ -459,13 +459,15 @@ export default function App() {
   }
 
   const arrowBlocksLeft = countBlocks(arrowState.board);
+  const isOverlayOpen = phase === 'cleared' || phase === 'failed' || phase === 'campaign_done';
 
   return (
     <div className="app-shell">
       <header className="top-ad">Ad Slot Top Banner (728x90)</header>
 
-      <main className="layout">
-        <aside className="panel left">
+      <div className="game-shell">
+        <main className="layout-main">
+          <aside className="panel left">
           <div className="user-line">
             <h2>{sessionUser}</h2>
             <button className="ghost" onClick={logout}>Logout</button>
@@ -487,9 +489,9 @@ export default function App() {
           </div>
 
           <div className="ad-box">Ad Slot Sidebar (300x250)</div>
-        </aside>
+          </aside>
 
-        <section className="panel center">
+          <section className={`panel center ${isOverlayOpen ? 'overlay-open' : ''}`}>
           <div className="level-head">
             <h3>{currentLevel.title}</h3>
             {currentLevel.type === 'arrow' ? (
@@ -540,30 +542,40 @@ export default function App() {
 
           {phase === 'cleared' && (
             <div className="overlay success">
-              <h4>Level Cleared</h4>
-              <p>Great work. Continue to next challenge.</p>
-              <button onClick={nextLevel}>Go Next</button>
+              <div className="overlay-card">
+                <h4>Level Cleared</h4>
+                <p>Great work. Continue to next challenge.</p>
+                <button onClick={nextLevel}>Go Next</button>
+              </div>
             </div>
           )}
 
           {phase === 'failed' && (
             <div className="overlay fail">
-              <h4>Level Failed</h4>
-              <p>{status}</p>
-              <button onClick={retryCurrent}>Retry</button>
+              <div className="overlay-card">
+                <h4>Level Failed</h4>
+                <p>{status}</p>
+                <div className="overlay-actions">
+                  <button onClick={retryCurrent}>Retry</button>
+                  <button className="ghost light" onClick={resetCampaign}>Restart Campaign</button>
+                </div>
+              </div>
             </div>
           )}
 
           {phase === 'campaign_done' && (
             <div className="overlay success">
-              <h4>Campaign Complete</h4>
-              <p>You finished all 4 levels. Final score: {score}.</p>
-              <button onClick={resetCampaign}>Play Again</button>
+              <div className="overlay-card">
+                <h4>Campaign Complete</h4>
+                <p>You finished all 4 levels. Final score: {score}.</p>
+                <button onClick={resetCampaign}>Play Again</button>
+              </div>
             </div>
           )}
-        </section>
+          </section>
+        </main>
 
-        <aside className="panel right">
+        <aside className="panel right leaderboard-outside">
           <h3>Leaderboard</h3>
           <div className="leader-list">
             {leaderboard.slice(0, 10).map((entry, idx) => (
@@ -576,7 +588,7 @@ export default function App() {
           </div>
           <div className="ad-box">Ad Slot Bottom Rectangle</div>
         </aside>
-      </main>
+      </div>
     </div>
   );
 }
