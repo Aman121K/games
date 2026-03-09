@@ -313,6 +313,7 @@ export default function App() {
   }, [phase, startLevelByIndex]);
 
   const resetCampaign = useCallback(() => {
+    advancingRef.current = false;
     setScore(0);
     setCampaignIndex(0);
     startLevelByIndex(0);
@@ -452,8 +453,12 @@ export default function App() {
   );
 
   const retryCurrent = useCallback(() => {
-    startLevelByIndex(campaignIndex);
-  }, [campaignIndex, startLevelByIndex]);
+    advancingRef.current = false;
+    setCampaignIndex((prev) => {
+      startLevelByIndex(prev);
+      return prev;
+    });
+  }, [startLevelByIndex]);
 
   if (!isLoggedIn) {
     return (

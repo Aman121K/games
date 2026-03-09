@@ -221,6 +221,7 @@ button.light {
 .board-panel.overlay-open .math-wrap {
   filter: blur(1.8px);
   opacity: 0.35;
+  pointer-events: none;
 }
 
 .level-head {
@@ -356,6 +357,8 @@ button.light {
   place-items: center;
   text-align: center;
   padding: 16px;
+  z-index: 12;
+  pointer-events: auto;
 }
 
 .overlay.success {
@@ -374,6 +377,8 @@ button.light {
   color: #edf3ff;
   padding: 20px;
   box-shadow: 0 18px 34px rgba(5, 8, 16, 0.45);
+  position: relative;
+  z-index: 13;
 }
 
 .overlay-card h4 {
