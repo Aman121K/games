@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const DIRS = ['up', 'right', 'down', 'left'];
 const VEC = {
@@ -163,30 +163,11 @@ function generateMathLevel(levelNumber) {
 }
 
 function ArrowIcon({ dir, className = 'arrow-icon' }) {
-  const iconId = useId().replace(/:/g, '');
-
   return (
     <svg className={className} viewBox="0 0 100 100" style={{ transform: `rotate(${ROTATION[dir]}deg)` }} aria-hidden="true">
-      <defs>
-        <linearGradient id={`${iconId}-body`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ffb56f" />
-          <stop offset="55%" stopColor="#ff7c46" />
-          <stop offset="100%" stopColor="#d93f22" />
-        </linearGradient>
-        <linearGradient id={`${iconId}-tip`} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#ffe2bf" />
-          <stop offset="100%" stopColor="#f5b880" />
-        </linearGradient>
-        <filter id={`${iconId}-shadow`} x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow dx="0" dy="1.8" stdDeviation="1.2" floodColor="#2e0f05" floodOpacity="0.28" />
-        </filter>
-      </defs>
-      <g filter={`url(#${iconId}-shadow)`}>
-        <rect x="20" y="41" width="42" height="18" rx="8" fill={`url(#${iconId}-body)`} />
-        <path d="M58 27 L89 50 L58 73 Z" fill={`url(#${iconId}-body)`} />
-        <path d="M18 50 L8 37 L8 63 Z" fill={`url(#${iconId}-tip)`} />
-        <path d="M30 36 L18 50 L30 64 Z" fill="#8f2f17" opacity="0.72" />
-      </g>
+      <path d="M16 50 H62" fill="none" stroke="#2a2f3a" strokeWidth="8" strokeLinecap="round" />
+      <path d="M60 34 L86 50 L60 66 Z" fill="#2a2f3a" />
+      <path d="M16 40 L27 50 L16 60 Z" fill="#2a2f3a" opacity="0.5" />
     </svg>
   );
 }
@@ -310,16 +291,20 @@ export default function App() {
   }, []);
 
   const nextLevel = useCallback(() => {
-    if (campaignIndex >= TOTAL_LEVELS - 1) {
-      setPhase('campaign_done');
-      setStatus('Campaign complete. Great run. Play again to improve rank.');
-      setScore((prev) => prev + 300);
-      return;
-    }
-    const nextIdx = campaignIndex + 1;
-    setCampaignIndex(nextIdx);
-    startLevelByIndex(nextIdx);
-  }, [campaignIndex, startLevelByIndex]);
+    if (phase !== 'cleared') return;
+
+    setCampaignIndex((prev) => {
+      if (prev >= TOTAL_LEVELS - 1) {
+        setPhase('campaign_done');
+        setStatus('Campaign complete. Great run. Play again to improve rank.');
+        setScore((current) => current + 300);
+        return prev;
+      }
+      const nextIdx = prev + 1;
+      queueMicrotask(() => startLevelByIndex(nextIdx));
+      return nextIdx;
+    });
+  }, [phase, startLevelByIndex]);
 
   const resetCampaign = useCallback(() => {
     setScore(0);
@@ -502,6 +487,7 @@ export default function App() {
   const isOverlayOpen = phase === 'cleared' || phase === 'failed' || phase === 'campaign_done';
   const levelProgress = currentLevel.type === 'arrow' ? `${arrowState.total - arrowBlocksLeft}/${arrowState.total}` : `${mathState.solved}/${mathState.questions.length}`;
   const timerValue = currentLevel.type === 'arrow' ? arrowState.timeLeft : mathState.timeLeft;
+  const canGoNext = phase === 'cleared';
 
   return (
     <div className="app-shell">
@@ -523,7 +509,7 @@ export default function App() {
         <section className={`board-panel ${isOverlayOpen ? 'overlay-open' : ''}`}>
           <div className="level-head">
             <h3>{currentLevel.title}</h3>
-            <p>{status}</p>
+            <p>{phase === 'playing' && currentLevel.type === 'arrow' ? 'Arrow Exit style: tap only arrows that have a clear path.' : status}</p>
           </div>
 
           {currentLevel.type === 'arrow' && (
@@ -570,7 +556,7 @@ export default function App() {
               <div className="overlay-card">
                 <h4>Level Cleared</h4>
                 <p>Great work. Continue to next challenge.</p>
-                <button onClick={nextLevel}>Go Next</button>
+                <button onClick={nextLevel} disabled={!canGoNext}>Go Next</button>
               </div>
             </div>
           )}
@@ -601,7 +587,7 @@ export default function App() {
 
         <div className="tool-row">
           <button onClick={retryCurrent}>Retry</button>
-          {phase === 'cleared' ? <button onClick={nextLevel}>Next</button> : <button className="ghost" onClick={resetCampaign}>Restart</button>}
+          <button onClick={nextLevel} disabled={!canGoNext}>Next</button>
           <button className="ghost" onClick={logout}>Logout</button>
         </div>
 
