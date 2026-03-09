@@ -247,6 +247,7 @@ button.light {
   justify-content: center;
   max-width: 100%;
   overflow: auto;
+  scrollbar-gutter: stable both-edges;
   padding: 12px;
   border-radius: 20px;
   border: 1px solid #d6deeb;
@@ -296,6 +297,10 @@ button.light {
   pointer-events: none;
   z-index: 4;
   place-self: center;
+  width: clamp(48px, 8vw, 84px);
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
 }
 
 .fly-icon {
@@ -543,6 +548,10 @@ button.light {
   .tile {
     width: clamp(42px, 10vw, 72px);
   }
+
+  .fly {
+    width: clamp(42px, 10vw, 72px);
+  }
 }
 
 @media (max-width: 560px) {
@@ -587,6 +596,10 @@ button.light {
   .tile {
     width: clamp(38px, 11.5vw, 58px);
     border-radius: 10px;
+  }
+
+  .fly {
+    width: clamp(38px, 11.5vw, 58px);
   }
 
   .math-options {
