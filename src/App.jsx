@@ -500,45 +500,30 @@ export default function App() {
 
   const arrowBlocksLeft = countBlocks(arrowState.board);
   const isOverlayOpen = phase === 'cleared' || phase === 'failed' || phase === 'campaign_done';
+  const levelProgress = currentLevel.type === 'arrow' ? `${arrowState.total - arrowBlocksLeft}/${arrowState.total}` : `${mathState.solved}/${mathState.questions.length}`;
+  const timerValue = currentLevel.type === 'arrow' ? arrowState.timeLeft : mathState.timeLeft;
 
   return (
     <div className="app-shell">
-      <header className="top-ad">Ad Slot Top Banner (728x90)</header>
-
-      <div className="game-shell">
-        <main className="layout-main">
-          <aside className="panel left">
-          <div className="user-line">
-            <h2>{sessionUser}</h2>
-            <button className="ghost" onClick={logout}>Logout</button>
+      <main className="play-area">
+        <header className="hud-bar">
+          <div className="hud-pill progress-pill">
+            <span className="hud-arrow">↑</span>
+            <strong>{levelProgress}</strong>
           </div>
-
-          <div className="stats-grid">
-            <article><span>Level</span><strong>{currentLevel.id}/{TOTAL_LEVELS}</strong></article>
-            <article><span>Type</span><strong>{currentLevel.type.toUpperCase()}</strong></article>
-            <article><span>Score</span><strong>{score}</strong></article>
-            <article><span>Rank</span><strong>{playerRank ? `#${playerRank}` : '--'}</strong></article>
+          <div className="hud-center">
+            <small>LV.{currentLevel.id}</small>
+            <div className="hud-hearts">{'❤'.repeat(Math.max(1, arrowState.hearts))}{'♡'.repeat(Math.max(0, 3 - arrowState.hearts))}</div>
           </div>
-
-          <p className="status">{status}</p>
-
-          <div className="controls">
-            <button onClick={retryCurrent}>Retry Level</button>
-            {phase === 'cleared' && <button onClick={nextLevel}>Next Level</button>}
-            <button className="ghost" onClick={resetCampaign}>Restart Campaign</button>
+          <div className="hud-pill">
+            <strong>{timerValue.toFixed(1)}s</strong>
           </div>
+        </header>
 
-          <div className="ad-box">Ad Slot Sidebar (300x250)</div>
-          </aside>
-
-          <section className={`panel center ${isOverlayOpen ? 'overlay-open' : ''}`}>
+        <section className={`board-panel ${isOverlayOpen ? 'overlay-open' : ''}`}>
           <div className="level-head">
             <h3>{currentLevel.title}</h3>
-            {currentLevel.type === 'arrow' ? (
-              <p>Tap only arrows with a clear path. Hearts: {'♥'.repeat(arrowState.hearts)}{'♡'.repeat(3 - arrowState.hearts)} | Time: {arrowState.timeLeft.toFixed(1)}s | Left: {arrowBlocksLeft}</p>
-            ) : (
-              <p>Question {mathState.index + 1}/{mathState.questions.length} | Time: {mathState.timeLeft.toFixed(1)}s</p>
-            )}
+            <p>{status}</p>
           </div>
 
           {currentLevel.type === 'arrow' && (
@@ -612,10 +597,22 @@ export default function App() {
               </div>
             </div>
           )}
-          </section>
-        </main>
+        </section>
 
-        <aside className="panel right leaderboard-outside">
+        <div className="tool-row">
+          <button onClick={retryCurrent}>Retry</button>
+          {phase === 'cleared' ? <button onClick={nextLevel}>Next</button> : <button className="ghost" onClick={resetCampaign}>Restart</button>}
+          <button className="ghost" onClick={logout}>Logout</button>
+        </div>
+
+        <section className="info-strip">
+          <article className="mini-stat"><span>Player</span><strong>{sessionUser}</strong></article>
+          <article className="mini-stat"><span>Score</span><strong>{score}</strong></article>
+          <article className="mini-stat"><span>Rank</span><strong>{playerRank ? `#${playerRank}` : '--'}</strong></article>
+          <article className="mini-stat"><span>Mode</span><strong>{currentLevel.type.toUpperCase()}</strong></article>
+        </section>
+
+        <aside className="leaderboard-sheet">
           <h3>Leaderboard</h3>
           <div className="leader-list">
             {leaderboard.slice(0, 10).map((entry, idx) => (
@@ -626,9 +623,8 @@ export default function App() {
               </div>
             ))}
           </div>
-          <div className="ad-box">Ad Slot Bottom Rectangle</div>
         </aside>
-      </div>
+      </main>
     </div>
   );
 }
