@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 
 const DIRS = ['up', 'right', 'down', 'left'];
 const VEC = {
@@ -163,10 +163,30 @@ function generateMathLevel(levelNumber) {
 }
 
 function ArrowIcon({ dir, className = 'arrow-icon' }) {
+  const iconId = useId().replace(/:/g, '');
+
   return (
     <svg className={className} viewBox="0 0 100 100" style={{ transform: `rotate(${ROTATION[dir]}deg)` }} aria-hidden="true">
-      <line x1="16" y1="50" x2="74" y2="50" />
-      <path d="M58 34 L84 50 L58 66 Z" />
+      <defs>
+        <linearGradient id={`${iconId}-body`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffb56f" />
+          <stop offset="55%" stopColor="#ff7c46" />
+          <stop offset="100%" stopColor="#d93f22" />
+        </linearGradient>
+        <linearGradient id={`${iconId}-tip`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ffe2bf" />
+          <stop offset="100%" stopColor="#f5b880" />
+        </linearGradient>
+        <filter id={`${iconId}-shadow`} x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="1.8" stdDeviation="1.2" floodColor="#2e0f05" floodOpacity="0.28" />
+        </filter>
+      </defs>
+      <g filter={`url(#${iconId}-shadow)`}>
+        <rect x="20" y="41" width="42" height="18" rx="8" fill={`url(#${iconId}-body)`} />
+        <path d="M58 27 L89 50 L58 73 Z" fill={`url(#${iconId}-body)`} />
+        <path d="M18 50 L8 37 L8 63 Z" fill={`url(#${iconId}-tip)`} />
+        <path d="M30 36 L18 50 L30 64 Z" fill="#8f2f17" opacity="0.72" />
+      </g>
     </svg>
   );
 }
@@ -515,7 +535,7 @@ export default function App() {
           <div className="level-head">
             <h3>{currentLevel.title}</h3>
             {currentLevel.type === 'arrow' ? (
-              <p>Hearts: {'♥'.repeat(arrowState.hearts)}{'♡'.repeat(3 - arrowState.hearts)} | Time: {arrowState.timeLeft.toFixed(1)}s | Left: {arrowBlocksLeft}</p>
+              <p>Tap only arrows with a clear path. Hearts: {'♥'.repeat(arrowState.hearts)}{'♡'.repeat(3 - arrowState.hearts)} | Time: {arrowState.timeLeft.toFixed(1)}s | Left: {arrowBlocksLeft}</p>
             ) : (
               <p>Question {mathState.index + 1}/{mathState.questions.length} | Time: {mathState.timeLeft.toFixed(1)}s</p>
             )}
@@ -587,7 +607,7 @@ export default function App() {
             <div className="overlay success">
               <div className="overlay-card">
                 <h4>Campaign Complete</h4>
-                <p>You finished all 4 levels. Final score: {score}.</p>
+                <p>You finished all {TOTAL_LEVELS} levels. Final score: {score}.</p>
                 <button onClick={resetCampaign}>Play Again</button>
               </div>
             </div>
@@ -600,7 +620,7 @@ export default function App() {
           <div className="leader-list">
             {leaderboard.slice(0, 10).map((entry, idx) => (
               <div key={entry.username} className={`leader-item ${entry.username === sessionUser ? 'me' : ''}`}>
-                <span>#{idx + 1}</span>
+                <span className={`rank-pill ${idx < 3 ? `top top-${idx + 1}` : ''}`}>#{idx + 1}</span>
                 <strong>{entry.username}</strong>
                 <em>{entry.score}</em>
               </div>
