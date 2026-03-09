@@ -17,13 +17,16 @@ const ROTATION = {
 const STORAGE_USERS = 'arrow_users_v1';
 const STORAGE_LEADERBOARD = 'arrow_leaderboard_v1';
 const STORAGE_SESSION = 'arrow_session_user_v1';
+const TOTAL_LEVELS = 200;
 
-const GAME_LEVELS = [
-  { id: 1, type: 'arrow', title: 'Arrow Escape I' },
-  { id: 2, type: 'math', title: 'Math Sprint I' },
-  { id: 3, type: 'arrow', title: 'Arrow Escape II' },
-  { id: 4, type: 'math', title: 'Math Sprint II' },
-];
+function getLevelMeta(levelNumber) {
+  const isArrow = levelNumber % 2 === 1;
+  return {
+    id: levelNumber,
+    type: isArrow ? 'arrow' : 'math',
+    title: isArrow ? `Arrow Escape ${levelNumber}` : `Math Sprint ${levelNumber}`,
+  };
+}
 
 function inBounds(r, c, size) {
   return r >= 0 && c >= 0 && r < size && c < size;
@@ -69,9 +72,10 @@ function getCandidates(board) {
 }
 
 function generateArrowLevel(levelNumber) {
-  const size = levelNumber === 1 ? 5 : 7;
+  const tier = Math.floor((levelNumber - 1) / 20);
+  const size = Math.min(10, 5 + tier);
   const board = Array.from({ length: size }, () => Array(size).fill(null));
-  const density = levelNumber === 1 ? 0.58 : 0.72;
+  const density = Math.min(0.9, 0.55 + levelNumber * 0.0024);
   const target = Math.floor(size * size * density);
 
   let placed = 0;
@@ -92,8 +96,8 @@ function generateArrowLevel(levelNumber) {
     levelNumber,
     board,
     total: countBlocks(board),
-    hearts: 3,
-    timeLeft: levelNumber === 1 ? 45 : 40,
+    hearts: levelNumber > 120 ? 2 : 3,
+    timeLeft: Math.max(20, 48 - Math.floor(levelNumber / 7)),
     blockedCell: '',
     flying: [],
   };
@@ -104,20 +108,35 @@ function randomInt(min, max) {
 }
 
 function makeQuestion(levelNumber) {
-  const hard = levelNumber >= 4;
-  const a = randomInt(hard ? 8 : 2, hard ? 35 : 15);
-  const b = randomInt(hard ? 4 : 1, hard ? 20 : 10);
-  const opSet = hard ? ['+', '-', '*'] : ['+', '-'];
+  const difficulty = Math.floor(levelNumber / 10);
+  const baseMin = 2 + difficulty;
+  const baseMax = 12 + difficulty * 6;
+  let a = randomInt(baseMin, baseMax);
+  let b = randomInt(baseMin, baseMax);
+  const opSet = ['+', '-', '*'];
+  if (levelNumber >= 30) opSet.push('/');
+  if (levelNumber >= 80) opSet.push('^');
   const op = opSet[randomInt(0, opSet.length - 1)];
 
   let answer = 0;
   if (op === '+') answer = a + b;
   if (op === '-') answer = a - b;
   if (op === '*') answer = a * b;
+  if (op === '/') {
+    b = randomInt(2, Math.min(12 + difficulty, 18));
+    answer = randomInt(2 + Math.floor(difficulty / 2), 10 + difficulty);
+    a = b * answer;
+  }
+  if (op === '^') {
+    a = randomInt(2, 4);
+    b = randomInt(2, levelNumber >= 130 ? 5 : 4);
+    answer = a ** b;
+  }
 
   const choices = new Set([answer]);
   while (choices.size < 4) {
-    const noise = randomInt(-14, 14);
+    const noiseRange = Math.max(10, Math.floor(Math.abs(answer) * 0.25));
+    const noise = randomInt(-noiseRange, noiseRange);
     if (noise === 0) continue;
     choices.add(answer + noise);
   }
@@ -131,14 +150,14 @@ function makeQuestion(levelNumber) {
 }
 
 function generateMathLevel(levelNumber) {
-  const totalQuestions = levelNumber === 2 ? 6 : 8;
+  const totalQuestions = Math.min(14, 5 + Math.floor(levelNumber / 15));
   const questions = Array.from({ length: totalQuestions }, () => makeQuestion(levelNumber));
   return {
     levelNumber,
     questions,
     index: 0,
     solved: 0,
-    timeLeft: levelNumber === 2 ? 50 : 55,
+    timeLeft: Math.max(24, 52 - Math.floor(levelNumber / 6)),
     wrong: 0,
   };
 }
@@ -222,7 +241,8 @@ export default function App() {
     return idx === -1 ? null : idx + 1;
   }, [leaderboard, sessionUser]);
 
-  const currentLevel = GAME_LEVELS[campaignIndex];
+  const levelNumber = campaignIndex + 1;
+  const currentLevel = getLevelMeta(levelNumber);
   const isLoggedIn = Boolean(sessionUser);
 
   useEffect(() => {
@@ -256,8 +276,8 @@ export default function App() {
   }, [currentLevel.type, isLoggedIn, phase]);
 
   const startLevelByIndex = useCallback((idx) => {
-    const level = GAME_LEVELS[idx];
-    if (!level) return;
+    if (idx < 0 || idx >= TOTAL_LEVELS) return;
+    const level = getLevelMeta(idx + 1);
 
     if (level.type === 'arrow') {
       setArrowState(generateArrowLevel(level.id));
@@ -266,11 +286,11 @@ export default function App() {
     }
 
     setPhase('playing');
-    setStatus(`Level ${level.id}: ${level.title}`);
+    setStatus(`Level ${level.id}: ${level.title}.`);
   }, []);
 
   const nextLevel = useCallback(() => {
-    if (campaignIndex >= GAME_LEVELS.length - 1) {
+    if (campaignIndex >= TOTAL_LEVELS - 1) {
       setPhase('campaign_done');
       setStatus('Campaign complete. Great run. Play again to improve rank.');
       setScore((prev) => prev + 300);
@@ -474,7 +494,7 @@ export default function App() {
           </div>
 
           <div className="stats-grid">
-            <article><span>Level</span><strong>{currentLevel.id}/4</strong></article>
+            <article><span>Level</span><strong>{currentLevel.id}/{TOTAL_LEVELS}</strong></article>
             <article><span>Type</span><strong>{currentLevel.type.toUpperCase()}</strong></article>
             <article><span>Score</span><strong>{score}</strong></article>
             <article><span>Rank</span><strong>{playerRank ? `#${playerRank}` : '--'}</strong></article>
