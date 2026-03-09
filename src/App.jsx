@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const DIRS = ['up', 'right', 'down', 'left'];
 const VEC = {
@@ -165,9 +165,9 @@ function generateMathLevel(levelNumber) {
 function ArrowIcon({ dir, className = 'arrow-icon' }) {
   return (
     <svg className={className} viewBox="0 0 100 100" style={{ transform: `rotate(${ROTATION[dir]}deg)` }} aria-hidden="true">
-      <path d="M16 50 H62" fill="none" stroke="#2a2f3a" strokeWidth="8" strokeLinecap="round" />
-      <path d="M60 34 L86 50 L60 66 Z" fill="#2a2f3a" />
-      <path d="M16 40 L27 50 L16 60 Z" fill="#2a2f3a" opacity="0.5" />
+      <path d="M18 50 H64" fill="none" stroke="#1f242e" strokeWidth="7" strokeLinecap="round" />
+      <path d="M62 34 L88 50 L62 66 Z" fill="#1f242e" />
+      <path d="M12 42 L22 50 L12 58 Z" fill="#1f242e" opacity="0.88" />
     </svg>
   );
 }
@@ -194,6 +194,7 @@ export default function App() {
   const [campaignIndex, setCampaignIndex] = useState(0);
   const [phase, setPhase] = useState('playing');
   const [status, setStatus] = useState('Welcome. Clear level 1 to start climbing leaderboard.');
+  const advancingRef = useRef(false);
 
   const [arrowState, setArrowState] = useState(() => generateArrowLevel(1));
   const [mathState, setMathState] = useState(() => generateMathLevel(2));
@@ -291,17 +292,22 @@ export default function App() {
   }, []);
 
   const nextLevel = useCallback(() => {
-    if (phase !== 'cleared') return;
+    if (phase !== 'cleared' || advancingRef.current) return;
+    advancingRef.current = true;
 
     setCampaignIndex((prev) => {
       if (prev >= TOTAL_LEVELS - 1) {
         setPhase('campaign_done');
         setStatus('Campaign complete. Great run. Play again to improve rank.');
         setScore((current) => current + 300);
+        advancingRef.current = false;
         return prev;
       }
       const nextIdx = prev + 1;
-      queueMicrotask(() => startLevelByIndex(nextIdx));
+      queueMicrotask(() => {
+        startLevelByIndex(nextIdx);
+        advancingRef.current = false;
+      });
       return nextIdx;
     });
   }, [phase, startLevelByIndex]);
